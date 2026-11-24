@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="さらっと跳び箱">
+<meta name="theme-color" content="#1f6f5c">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>さらっと跳び箱</title>
+<style>
+:root{
+  --green:#1f6f5c; --green-d:#16513f; --green-l:#dcefe8;
+  --orange:#e0762b; --orange-l:#fbe6d4;
+  --paper:#f6f1e7; --card:#fffdf8; --ink:#2b2a27; --sub:#6b675e; --line:#e2dccd;
+  --red:#b8473a;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--paper);color:var(--ink);
+  font-family:-apple-system,"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;
+  -webkit-text-size-adjust:100%;overscroll-behavior:none}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+.screen{display:none;height:100%;flex-direction:column;
+  padding:max(14px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left))}
+.screen.on{display:flex}
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+h1{font-size:34px;margin:0;letter-spacing:.04em}
+h2{font-size:22px;margin:0 0 8px}
+.lead{color:var(--sub);font-size:16px;margin:4px 0 0}
+.btn{min-height:52px;padding:10px 22px;border-radius:14px;font-weight:700;font-size:18px;background:var(--card);border:2px solid var(--line);box-shadow:0 2px 0 var(--line)}
+.btn:active{transform:translateY(2px);box-shadow:none}
+.btn.main{background:var(--green);border-color:var(--green-d);color:#fff;box-shadow:0 3px 0 var(--green-d)}
+.btn.orange{background:var(--orange);border-color:#b85a1a;color:#fff;box-shadow:0 3px 0 #b85a1a}
+.btn[disabled]{opacity:.4;pointer-events:none}
+.btn.sm{min-height:44px;font-size:16px;padding:8px 16px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.card{background:var(--card);border:2px solid var(--line);border-radius:18px;padding:16px 18px}
+.label{font-size:15px;font-weight:700;color:var(--sub);margin:16px 0 8px}
+
+/* home */
+.nums{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+.num{min-height:52px;border-radius:12px;background:var(--card);border:2px solid var(--line);font-size:22px;font-weight:700}
+.num.on{background:var(--green);border-color:var(--green-d);color:#fff}
+.wazas{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.waza{padding:16px;border-radius:16px;background:var(--card);border:3px solid var(--line);text-align:left}
+.waza b{display:block;font-size:24px}
+.waza span{font-size:14px;color:var(--sub)}
+.waza.on{border-color:var(--green);background:var(--green-l)}
+.meate{background:var(--orange-l);border:2px solid #f0c9a6;border-radius:14px;padding:12px 16px;font-size:19px;font-weight:700}
+.meate small{display:block;font-size:13px;color:#9a5a24;margin-bottom:2px}
+.foot{display:flex;justify-content:space-between;align-items:center;color:var(--sub);font-size:13px;padding-top:8px}
+.foot button{color:var(--sub);text-decoration:underline;font-size:13px;min-height:44px;padding:0 8px}
+
+/* camera */
+#sCam{background:#111;color:#fff;padding:max(8px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left))}
+#camTop{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:6px}
+#camMeate{background:var(--orange);color:#fff;border-radius:12px;padding:8px 14px;font-weight:700;font-size:18px;flex:1}
+#stage{flex:1;min-height:0;position:relative;background:#000;border-radius:14px;overflow:hidden}
+#view{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+#view.mirror{transform:scaleX(-1)}
+#vid{position:absolute;width:2px;height:2px;opacity:0;pointer-events:none}
+#msg{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;font-size:24px;font-weight:700;line-height:1.6;background:rgba(0,0,0,.55);white-space:pre-line}
+#msg small{font-size:16px;font-weight:400;opacity:.85;margin-top:8px}
+#badge{position:absolute;left:12px;top:12px;background:rgba(0,0,0,.6);border-radius:10px;padding:6px 12px;font-weight:700;font-size:18px}
+#camBar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;justify-content:center}
+.seg{display:flex;border-radius:12px;overflow:hidden;border:2px solid #555}
+.seg button{min-width:64px;min-height:48px;padding:0 14px;font-weight:700;font-size:18px;color:#ddd;background:#222}
+.seg button.on{background:var(--green);color:#fff}
+.cbtn{min-height:48px;padding:0 16px;border-radius:12px;font-weight:700;font-size:17px;background:#2c2c2c;border:2px solid #555;color:#fff}
+.cbtn.on{background:var(--green);border-color:var(--green)}
+.cbtn.hot{background:var(--orange);border-color:var(--orange)}
+.cbtn.go{background:var(--green);border-color:var(--green)}
+#scrubBar{display:none;width:100%;gap:10px;align-items:center}
+#scrubBar.on{display:flex}
+#scrub{flex:1;height:44px}
+#scrubTime{min-width:90px;text-align:right;font-weight:700;font-size:18px}
+
+/* review */
+.vrow{background:var(--card);border:2px solid var(--line);border-radius:16px;padding:12px 14px;margin-bottom:10px}
+.vrow h3{margin:0;font-size:20px}
+.vrow p{margin:2px 0 8px;color:var(--sub);font-size:14px}
+.rates{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.rate{min-height:54px;border-radius:12px;border:2px solid var(--line);background:#fff;font-weight:700;font-size:18px}
+.rate small{display:block;font-size:12px;font-weight:400;color:var(--sub)}
+.rate.on.r2{background:#dff1e4;border-color:#3e9a5c}
+.rate.on.r1{background:#fff2c9;border-color:#d1a21f}
+.rate.on.r0{background:var(--orange-l);border-color:var(--orange)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.chip{min-height:44px;padding:6px 14px;border-radius:22px;border:2px solid var(--line);background:#fff;font-size:16px}
+.chip.on{background:var(--green);border-color:var(--green-d);color:#fff;font-weight:700}
+.chiptitle{font-size:14px;font-weight:700;color:var(--green-d);margin-top:10px}
+textarea{width:100%;min-height:96px;border-radius:14px;border:2px solid var(--line);padding:12px;font:inherit;font-size:18px;background:#fff;resize:vertical}
+.hint{font-size:13px;color:var(--sub);margin:6px 0 0}
+
+/* analysis */
+.ok li,.ng li{margin:6px 0;font-size:18px}
+.target{background:var(--orange);color:#fff;border-radius:18px;padding:16px 20px}
+.target small{opacity:.9;font-size:14px}
+.target b{display:block;font-size:26px;margin-top:2px}
+table.hist{border-collapse:collapse;width:100%;font-size:18px}
+table.hist th,table.hist td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:center}
+table.hist th:first-child,table.hist td:first-child{text-align:left;font-size:15px}
+.s2{color:#2f8a4f;font-weight:700}.s1{color:#b88a12;font-weight:700}.s0{color:var(--orange);font-weight:700}
+.big{font-size:20px}
+.toast{position:fixed;left:50%;bottom:calc(30px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#222;color:#fff;padding:12px 20px;border-radius:12px;font-weight:700;z-index:20;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.on{opacity:1}
+
+/* teacher */
+.t-table{width:100%;border-collapse:collapse;font-size:13px}
+.t-table th,.t-table td{border-bottom:1px solid var(--line);padding:5px 6px;text-align:left;vertical-align:top}
+.pass{font-size:24px;width:140px;text-align:center;border-radius:12px;border:2px solid var(--line);padding:10px;background:#fff}
+</style>
+</head>
+<body>
+
+<!-- ホーム -->
+<section class="screen on" id="sHome">
+  <div class="scroll">
+    <h1>さらっと跳び箱</h1>
+    <p class="lead">見て、ふり返って、つぎのめあてを決めよう。</p>
+
+    <div class="label">① 出席番号</div>
+    <div class="nums" id="nums"></div>
+
+    <div class="label">② 技</div>
+    <div class="wazas" id="wazas"></div>
+
+    <div class="label">③ 今日のめあて</div>
+    <div class="meate" id="homeMeate"></div>
+
+    <div class="row" style="margin-top:18px">
+      <button class="btn main big" id="goCam" disabled>カメラをひらいて はじめる</button>
+      <button class="btn" id="goReview" disabled>カメラなしで ふり返りだけ</button>
+      <button class="btn" id="goAnalysis" disabled>分析を見る</button>
+    </div>
+    <p class="hint" id="homeNote"></p>
+  </div>
+  <div class="foot">
+    <span id="recCount"></span>
+    <button id="goTeacher">先生用</button>
+  </div>
+</section>
+
+<!-- カメラ -->
+<section class="screen" id="sCam">
+  <div id="camTop">
+    <div id="camMeate"></div>
+    <button class="cbtn" id="camHome">もどる</button>
+  </div>
+  <div id="stage">
+    <video id="vid" playsinline muted autoplay></video>
+    <canvas id="view"></canvas>
+    <div id="badge">3秒前</div>
+    <div id="msg" style="display:none"></div>
+  </div>
+  <div id="camBar">
+    <div id="scrubBar">
+      <button class="cbtn" id="stepBack">◀ 1コマ</button>
+      <input type="range" id="scrub" min="0" max="0" value="0">
+      <button class="cbtn" id="stepFwd">1コマ ▶</button>
+      <button class="cbtn" id="playBtn">▶ スロー</button>
+      <button class="cbtn" id="speedBtn">0.5倍</button>
+      <span id="scrubTime"></span>
+    </div>
+    <div class="seg" id="delaySeg">
+      <button data-d="3" class="on">3秒前</button>
+      <button data-d="5">5秒前</button>
+      <button data-d="8">8秒前</button>
+    </div>
+    <button class="cbtn" id="mirrorBtn">左右反転</button>
+    <button class="cbtn" id="flipBtn">カメラ切りかえ</button>
+    <button class="cbtn hot" id="pauseBtn">■ 止めて見る</button>
+    <button class="cbtn go" id="toReview">ふり返りを書く ▶</button>
+  </div>
+</section>
+
+<!-- ふり返り -->
+<section class="screen" id="sReview">
+  <div class="row" style="justify-content:space-between">
+    <h2 id="rvTitle" style="margin:0"></h2>
+    <button class="btn sm" id="rvBack">もどる</button>
+  </div>
+  <div class="scroll" style="margin-top:8px">
+    <div id="rvRows"></div>
+    <div class="label">ひとこと（話して入力してもOK）</div>
+    <textarea id="memo" placeholder="例：手をもっと前につけたら、うまく とべた"></textarea>
+    <p class="hint">キーボードの🎤（マイク）ボタンをおして、はなしかけよう。まちがえた字はなおしてね。</p>
+    <p class="hint" id="rvErr" style="color:var(--red);font-weight:700"></p>
+    <div class="row" style="margin:14px 0 24px">
+      <button class="btn main big" id="saveBtn">記録する</button>
+    </div>
+  </div>
+</section>
+
+<!-- 記録したよ -->
+<section class="screen" id="sSaved">
+  <div class="scroll" style="display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:18px">
+    <h1>記録したよ！</h1>
+    <p class="lead big" id="savedMsg"></p>
+    <div class="row" style="justify-content:center">
+      <button class="btn orange big" id="svAnalysis">分析を見る</button>
+      <button class="btn main big" id="svNext">つぎのめあてで カメラへ</button>
+      <button class="btn" id="svHome">ホームへ</button>
+    </div>
+  </div>
+</section>
+
+<!-- 分析 -->
+<section class="screen" id="sAnalysis">
+  <div class="row" style="justify-content:space-between">
+    <h2 id="anTitle" style="margin:0"></h2>
+    <button class="btn sm" id="anHome">ホームへ</button>
+  </div>
+  <div class="scroll" style="margin-top:8px" id="anBody"></div>
+</section>
+
+<!-- 先生用 -->
+<section class="screen" id="sTeacher">
+  <div class="row" style="justify-content:space-between">
+    <h2 style="margin:0">先生用</h2>
+    <button class="btn sm" id="tHome">ホームへ</button>
+  </div>
+  <div class="scroll" style="margin-top:8px">
+    <div id="tLock" class="card">
+      <p style="margin:0 0 10px">合言葉（4けた）を入れてください。</p>
+      <div class="row"><input id="tPass" class="pass" inputmode="numeric" maxlength="4" autocomplete="off"><button class="btn main" id="tOpen">ひらく</button></div>
+      <p class="hint" id="tErr" style="color:var(--red)"></p>
+    </div>
+    <div id="tBody" style="display:none">
+      <p id="tSummary" style="margin:0 0 8px"></p>
+      <div class="row" style="margin-bottom:8px">
+        <button class="btn main sm" id="tCopy">全部コピー（スプレッドシートに貼れます）</button>
+        <button class="btn sm" id="tClear">この端末の記録を消す</button>
+      </div>
+      <p class="hint">コピーした表は、スプレッドシートの A1 をえらんで貼りつけます。教室でWi-Fiにつながってから貼ってください。</p>
+      <textarea id="tTsv" readonly style="min-height:70px;font-size:12px"></textarea>
+      <div style="overflow-x:auto;margin-top:10px"><table class="t-table" id="tTable"></table></div>
+    </div>
+  </div>
+</section>
+
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+/* ====== 設定：技と観点 ====== */
+const R = '開<ruby>脚<rt>きゃく</rt></ruby>';
+const WAZA = {
+  kaikyaku: {
+    name: '大きな' + R + 'とび', plain: '大きな開脚とび',
+    desc: 'ふみ切って、手をついて、大きく足を開いてとぶ',
+    next: 'daijo',
+    pts: [
+      { key:'fumi', name:'ふみ切り', desc:'両足でつよくふみ切れたかな',
+        meate:'ふみ切りで 両足ドン！と ふみ切ろう',
+        kotsu:['助走を だんだん 速くする','ふみ切り板に 両足で ドン！','うでを 前から 上へ ふる'] },
+      { key:'te', name:'手のつき方', desc:'手を台の前の方に、遠くにつけたかな',
+        meate:'手を 台の 前の方に ついてみよう',
+        kotsu:['手を 台の 前の方に つく','うでを のばして 体を 前に おくる','手で 台を つきはなす'] },
+      { key:'ashi', name:'足の開き', desc:'空中で足を大きく開けたかな',
+        meate:'おしりを 高く あげて 足を 大きく 開こう',
+        kotsu:['おしりを 高く あげる','足を 大きく 開く','目は 台の 向こうを 見る'] },
+      { key:'chaku', name:'着地', desc:'ひざをやわらかく、ぴたっと止まれたかな',
+        meate:'ひざを やわらかく して ぴたっと 止まろう',
+        kotsu:['ひざを やわらかく 曲げる','着地で ぴたっと 止まる','両手を 広げて バランス'] }
+    ]
+  },
+  daijo: {
+    name: '台上前転', plain: '台上前転',
+    desc: '台の上で 体を丸くして 前に回る',
+    next: null,
+    pts: [
+      { key:'fumi', name:'ふみ切り', desc:'両足でつよくふみ切って、おしりを高くあげられたかな',
+        meate:'両足で つよく ふみ切って おしりを 高く あげよう',
+        kotsu:['両足で つよく ふみ切る','おしりを 高く あげる','手を 台の 手前に つく じゅんび'] },
+      { key:'te', name:'手と頭', desc:'手を台の手前につき、あごをひいて頭を入れられたかな',
+        meate:'手を 台の 手前に ついて あごを ひこう',
+        kotsu:['手は 台の 手前に つく','あごを むねに つける（おへそを 見る）','うでで 体を ささえる'] },
+      { key:'kai', name:'台の上で回る', desc:'体を丸くして、まっすぐ回れたかな',
+        meate:'体を 丸くして まっすぐ 回ろう',
+        kotsu:['体を 丸くする','せなかを まっすぐに して 回る','ひざを かかえる'] },
+      { key:'chaku', name:'立ち上がり・着地', desc:'足から着いて、ぴたっと立てたかな',
+        meate:'足から マットに ついて ぴたっと 立とう',
+        kotsu:['足から 先に マットに つく','ひざを 曲げて ぴたっと 止まる','立ち上がって 両手を 上げる'] }
+    ]
+  }
+};
+const LV = [
+  { s:'△', t:'もう少し', sub:'' },
+  { s:'○', t:'まあまあ', sub:'' },
+  { s:'◎', t:'かんぺき', sub:'100%' }
+];
+const PASS = '1110';
+const KEY = 'saratto-tobibako-v1';
+
+/* ====== 保存（localStorage／失敗してもメモリで動く） ====== */
+let mem = { records: [], meate: {}, lastN: null };
+function load(){ try{ const s = localStorage.getItem(KEY); if(s){ const o = JSON.parse(s); if(o && Array.isArray(o.records)) mem = Object.assign(mem, o); } }catch(e){} }
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(mem)); }catch(e){} }
+load();
+
+/* ====== 共通 ====== */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function show(id){ document.querySelectorAll('.screen').forEach(e => e.classList.toggle('on', e.id === id)); }
+function toast(t){ const e = $('toast'); e.textContent = t; e.classList.add('on'); setTimeout(() => e.classList.remove('on'), 1800); }
+const cur = { n: mem.lastN, waza: 'kaikyaku', rate: {}, kotsu: {} };
+const mk = () => cur.n + '|' + cur.waza;
+const myRecs = () => mem.records.filter(r => r.n === cur.n && r.waza === cur.waza).sort((a,b) => a.ts - b.ts);
+function defaultMeate(){ return mem.meate[mk()] || '見るポイントを 1つ きめて とんでみよう'; }
+
+/* ====== ホーム ====== */
+function buildHome(){
+  const nums = $('nums'); nums.innerHTML = '';
+  for(let i = 1; i <= 14; i++){
+    const b = document.createElement('button'); b.className = 'num' + (cur.n === i ? ' on' : ''); b.textContent = i;
+    b.onclick = () => { cur.n = i; mem.lastN = i; save(); refreshHome(); buildHome(); };
+    nums.appendChild(b);
+  }
+  const w = $('wazas'); w.innerHTML = '';
+  Object.keys(WAZA).forEach(k => {
+    const b = document.createElement('button'); b.className = 'waza' + (cur.waza === k ? ' on' : '');
+    b.innerHTML = '<b>' + WAZA[k].name + '</b><span>' + WAZA[k].desc + '</span>';
+    b.onclick = () => { cur.waza = k; refreshHome(); buildHome(); };
+    w.appendChild(b);
+  });
+}
+function refreshHome(){
+  const ok = cur.n != null;
+  $('goCam').disabled = !ok; $('goReview').disabled = !ok;
+  $('goAnalysis').disabled = !(ok && myRecs().length);
+  $('homeMeate').innerHTML = ok ? '<small>' + (mem.meate[mk()] ? 'めあて' : 'はじめて') + '</small>' + esc(defaultMeate()) : '出席番号をえらんでね';
+  $('homeNote').textContent = ok ? '' : '';
+  const total = mem.records.length;
+  $('recCount').textContent = 'この iPad の記録：' + total + ' 回';
+}
+$('goCam').onclick = () => { openCam(); };
+$('goReview').onclick = () => openReview();
+$('goAnalysis').onclick = () => openAnalysis();
+$('goTeacher').onclick = () => { $('tPass').value = ''; $('tErr').textContent = ''; $('tLock').style.display = ''; $('tBody').style.display = 'none'; show('sTeacher'); };
+
+/* ====== カメラ（ディレイ再生） ====== */
+const FPS = 12, MAXSEC = 8, FW = 480;
+let stream = null, facing = 'environment', mirror = false, delaySec = 3;
+let ringC = [], ringX = [], tsArr = [], N = 0, head = 0, count = 0, fh = 270;
+let rafId = 0, lastCap = 0, paused = false, viewIdx = 0, playTimer = 0, speedI = 1;
+const SPEEDS = [0.25, 0.5, 1];
+const vid = $('vid'), view = $('view'), vctx = view.getContext('2d');
+
+function msg(t, small){ const m = $('msg'); if(!t){ m.style.display = 'none'; return; } m.style.display = 'flex'; m.innerHTML = esc(t) + (small ? '<small>' + esc(small) + '</small>' : ''); }
+function slot(k){ return (head - count + k + N * 2) % N; }
+
+async function openCam(){
+  show('sCam');
+  $('camMeate').textContent = 'めあて：' + defaultMeate();
+  paused = false; setScrub(false); $('pauseBtn').textContent = '■ 止めて見る'; $('pauseBtn').classList.add('hot');
+  msg('カメラを じゅんびしています…');
+  await startStream();
+}
+async function startStream(){
+  stopStream();
+  try{
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('nocam');
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: facing }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
+    vid.srcObject = stream;
+    await vid.play().catch(()=>{});
+    await new Promise(res => { if(vid.videoWidth) res(); else vid.onloadedmetadata = () => res(); });
+    initRing();
+    msg('');
+    cancelAnimationFrame(rafId); rafId = requestAnimationFrame(loop);
+    try{ if(navigator.wakeLock) navigator.wakeLock.request('screen').catch(()=>{}); }catch(e){}
+  }catch(e){
+    msg('カメラが つかえません', '設定でカメラを「ゆるす」にして、もう一度ひらいてね。カメラなしでふり返りも書けます。');
+  }
+}
+function stopStream(){
+  cancelAnimationFrame(rafId); rafId = 0;
+  clearInterval(playTimer); playTimer = 0;
+  if(stream){ stream.getTracks().forEach(t => t.stop()); stream = null; }
+  vid.srcObject = null;
+}
+function initRing(){
+  fh = Math.max(2, Math.round(FW * vid.videoHeight / vid.videoWidth));
+  N = FPS * MAXSEC + FPS; head = 0; count = 0; ringC = []; ringX = []; tsArr = new Array(N).fill(0);
+  for(let i = 0; i < N; i++){ const c = document.createElement('canvas'); c.width = FW; c.height = fh; ringC.push(c); ringX.push(c.getContext('2d')); }
+  view.width = FW; view.height = fh;
+}
+function loop(){
+  rafId = requestAnimationFrame(loop);
+  const now = performance.now();
+  if(!paused && vid.readyState >= 2 && now - lastCap >= 1000 / FPS){
+    lastCap = now; ringX[head].drawImage(vid, 0, 0, FW, fh); tsArr[head] = now; head = (head + 1) % N; count = Math.min(count + 1, N);
+  }
+  draw(now);
+}
+function draw(now){
+  if(!count){ vctx.fillStyle = '#000'; vctx.fillRect(0, 0, FW, fh); return; }
+  let k = -1;
+  if(paused){ k = Math.max(0, Math.min(viewIdx, count - 1)); }
+  else{
+    const target = now - delaySec * 1000;
+    for(let i = count - 1; i >= 0; i--){ if(tsArr[slot(i)] <= target){ k = i; break; } }
+  }
+  if(k < 0){
+    vctx.fillStyle = '#000'; vctx.fillRect(0, 0, FW, fh);
+    const wait = Math.max(0, delaySec - (now - tsArr[slot(0)]) / 1000);
+    msg('じゅんびちゅう… あと ' + Math.ceil(wait) + ' 秒', 'この画面に、' + delaySec + '秒前の自分が うつります');
+    return;
+  }
+  if($('msg').style.display !== 'none' && stream) msg('');
+  vctx.drawImage(ringC[slot(k)], 0, 0);
+  if(paused) updateScrubLabel();
+}
+function setScrub(on){ $('scrubBar').classList.toggle('on', on); }
+function updateScrubLabel(){
+  if(!count) return;
+  const newest = tsArr[slot(count - 1)], t = tsArr[slot(Math.max(0, Math.min(viewIdx, count - 1)))];
+  $('scrubTime').textContent = ((newest - t) / 1000).toFixed(1) + '秒前';
+  $('scrub').value = viewIdx;
+}
+function pauseNow(){
+  if(!count) return;
+  const now = performance.now(), target = now - delaySec * 1000;
+  let k = 0;
+  for(let i = count - 1; i >= 0; i--){ if(tsArr[slot(i)] <= target){ k = i; break; } }
+  paused = true; viewIdx = k;
+  $('scrub').max = count - 1; $('scrub').value = k;
+  setScrub(true); $('pauseBtn').textContent = '● つづける'; $('pauseBtn').classList.remove('hot');
+  $('playBtn').textContent = '▶ スロー';
+}
+function resumeNow(){
+  paused = false; clearInterval(playTimer); playTimer = 0;
+  count = 0; head = 0; // 止めている間のすき間をなくす
+  setScrub(false); $('pauseBtn').textContent = '■ 止めて見る'; $('pauseBtn').classList.add('hot');
+}
+$('pauseBtn').onclick = () => { if(!stream) return; paused ? resumeNow() : pauseNow(); };
+$('scrub').oninput = e => { viewIdx = +e.target.value; clearInterval(playTimer); playTimer = 0; $('playBtn').textContent = '▶ スロー'; };
+$('stepBack').onclick = () => { viewIdx = Math.max(0, viewIdx - 1); };
+$('stepFwd').onclick = () => { viewIdx = Math.min(count - 1, viewIdx + 1); };
+$('speedBtn').onclick = () => { speedI = (speedI + 1) % SPEEDS.length; $('speedBtn').textContent = SPEEDS[speedI] === 1 ? 'ふつう' : SPEEDS[speedI] + '倍'; if(playTimer) startPlay(); };
+function startPlay(){
+  clearInterval(playTimer);
+  playTimer = setInterval(() => {
+    if(viewIdx >= count - 1){ clearInterval(playTimer); playTimer = 0; $('playBtn').textContent = '▶ スロー'; return; }
+    viewIdx++;
+  }, 1000 / FPS / SPEEDS[speedI]);
+  $('playBtn').textContent = '❚❚ とめる';
+}
+$('playBtn').onclick = () => {
+  if(playTimer){ clearInterval(playTimer); playTimer = 0; $('playBtn').textContent = '▶ スロー'; return; }
+  if(viewIdx >= count - 1) viewIdx = 0;
+  startPlay();
+};
+$('delaySeg').onclick = e => {
+  const b = e.target.closest('button'); if(!b) return;
+  delaySec = +b.dataset.d; $('badge').textContent = delaySec + '秒前';
+  [...$('delaySeg').children].forEach(x => x.classList.toggle('on', x === b));
+};
+$('mirrorBtn').onclick = () => { mirror = !mirror; view.classList.toggle('mirror', mirror); $('mirrorBtn').classList.toggle('on', mirror); };
+$('flipBtn').onclick = async () => { facing = facing === 'environment' ? 'user' : 'environment'; paused = false; setScrub(false); msg('カメラを きりかえています…'); await startStream(); };
+$('camHome').onclick = () => { stopStream(); refreshHome(); show('sHome'); };
+$('toReview').onclick = () => { stopStream(); openReview(); };
+
+/* ====== ふり返り ====== */
+function openReview(){
+  const W = WAZA[cur.waza];
+  cur.rate = {}; cur.kotsu = {};
+  $('rvTitle').innerHTML = '№' + cur.n + '　' + W.name + ' の ふり返り';
+  $('memo').value = ''; $('rvErr').textContent = '';
+  renderRows();
+  show('sReview');
+}
+function renderRows(){
+  const W = WAZA[cur.waza], box = $('rvRows'); box.innerHTML = '';
+  W.pts.forEach(p => {
+    const d = document.createElement('div'); d.className = 'vrow';
+    const r = cur.rate[p.key];
+    let h = '<h3>' + p.name + '</h3><p>' + p.desc + '</p><div class="rates">';
+    [2, 1, 0].forEach(v => {
+      h += '<button class="rate r' + v + (r === v ? ' on' : '') + '" data-k="' + p.key + '" data-v="' + v + '">' + LV[v].s + ' ' + LV[v].t + (LV[v].sub ? '<small>' + LV[v].sub + '</small>' : '') + '</button>';
+    });
+    h += '</div>';
+    if(r != null){
+      h += '<div class="chiptitle">' + (r === 2 ? 'うまくいった コツは？' : 'つぎに 気をつける コツは？') + '（えらべる）</div><div class="chips">';
+      const sel = cur.kotsu[p.key] || [];
+      p.kotsu.forEach((t, i) => { h += '<button class="chip' + (sel.includes(i) ? ' on' : '') + '" data-k="' + p.key + '" data-i="' + i + '">' + esc(t) + '</button>'; });
+      h += '</div>';
+    }
+    d.innerHTML = h; box.appendChild(d);
+  });
+}
+$('rvRows').onclick = e => {
+  const r = e.target.closest('.rate'), c = e.target.closest('.chip');
+  if(r){ cur.rate[r.dataset.k] = +r.dataset.v; renderRows(); }
+  else if(c){
+    const k = c.dataset.k, i = +c.dataset.i; const a = cur.kotsu[k] || (cur.kotsu[k] = []);
+    const at = a.indexOf(i); at >= 0 ? a.splice(at, 1) : a.push(i); renderRows();
+  }
+};
+$('rvBack').onclick = () => { refreshHome(); show('sHome'); };
+$('saveBtn').onclick = () => {
+  const W = WAZA[cur.waza];
+  const miss = W.pts.filter(p => cur.rate[p.key] == null);
+  if(miss.length){ $('rvErr').textContent = 'まだの ところが あるよ：' + miss.map(p => p.name).join('、'); return; }
+  const rec = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), ts: Date.now(), n: cur.n, waza: cur.waza,
+    rate: Object.assign({}, cur.rate), kotsu: JSON.parse(JSON.stringify(cur.kotsu)), memo: $('memo').value.trim() };
+  mem.records.push(rec); save();
+  $('savedMsg').textContent = '№' + cur.n + '　' + W.name + '　' + myRecs().length + '回目';
+  show('sSaved');
+};
+$('svAnalysis').onclick = () => openAnalysis();
+$('svHome').onclick = () => { refreshHome(); show('sHome'); };
+$('svNext').onclick = () => {
+  const a = analyze(); if(a && a.target){ mem.meate[mk()] = a.target.meate; save(); }
+  openCam();
+};
+
+/* ====== 分析（ルール判定・通信なし） ====== */
+function analyze(){
+  const recs = myRecs(); if(!recs.length) return null;
+  const W = WAZA[cur.waza], last = recs[recs.length - 1], prev = recs.length > 1 ? recs[recs.length - 2] : null;
+  const recent = recs.slice(-5), last3 = recs.slice(-3);
+  const good = [], todo = [];
+  W.pts.forEach(p => {
+    const v = last.rate[p.key], pv = prev ? prev.rate[p.key] : null;
+    const avg3 = last3.reduce((s, r) => s + (r.rate[p.key] || 0), 0) / last3.length;
+    p._v = v; p._avg = avg3;
+    if(v === 2) good.push('◎ ' + p.name + '：かんぺき！');
+    else if(pv != null && v > pv) good.push('↑ ' + p.name + '：前より よくなったよ');
+    if(v < 2){
+      const twice = pv != null && pv < 2 && v === 0 && pv === 0;
+      todo.push({ p, text: LV[v].s + ' ' + p.name + '：' + LV[v].t + (twice ? '（つづけて もう少し）' : '') });
+    }
+  });
+  let target = null, special = null;
+  const cand = W.pts.filter(p => p._v < 2);
+  if(cand.length){
+    cand.sort((a, b) => a._v - b._v || a._avg - b._avg || W.pts.indexOf(a) - W.pts.indexOf(b));
+    target = cand[0];
+  }else{
+    const both = prev && W.pts.every(p => prev.rate[p.key] === 2);
+    special = both ? (W.next ? 'next' : 'master') : 'again';
+  }
+  if(!good.length) good.push('今日も ちょうせん できたね。見て ふり返ったことが 第一歩！');
+  return { W, recs, recent, good, todo, target, special, last };
+}
+function openAnalysis(){
+  const a = analyze(); if(!a){ return; }
+  const { W, recent, good, todo, target, special } = a;
+  $('anTitle').innerHTML = '№' + cur.n + '　' + W.name + ' の 分析（' + a.recs.length + '回目）';
+  let h = '';
+  h += '<div class="card ok" style="margin-bottom:12px"><div class="label" style="margin-top:0;color:#2f8a4f">できたポイント</div><ul style="margin:0;padding-left:20px">' + good.map(t => '<li>' + esc(t) + '</li>').join('') + '</ul></div>';
+  if(todo.length) h += '<div class="card ng" style="margin-bottom:12px"><div class="label" style="margin-top:0;color:var(--orange)">まだのポイント</div><ul style="margin:0;padding-left:20px">' + todo.map(t => '<li>' + esc(t.text) + '</li>').join('') + '</ul></div>';
+  if(target){
+    h += '<div class="target" style="margin-bottom:12px"><small>つぎの めあて</small><b>' + esc(target.meate) + '</b></div>';
+    const used = new Set(); a.recs.forEach(r => (r.kotsu[target.key] || []).forEach(i => used.add(i)));
+    h += '<div class="card" style="margin-bottom:12px"><div class="label" style="margin-top:0">コツの ヒント（★は 前にえらんだコツ）</div><div class="chips" style="margin-top:0">' +
+      target.kotsu.map((t, i) => '<span class="chip" style="background:#fff">' + (used.has(i) ? '★ ' : '') + esc(t) + '</span>').join('') + '</div></div>';
+  }else{
+    const m = special === 'next' ? 'ぜんぶ ◎ が 2回 つづいたよ！ ' + WAZA[W.next].name + ' に ちょうせんしよう'
+      : special === 'master' ? 'ぜんぶ ◎ が 2回 つづいたよ！ 友だちに コツを おしえてあげよう'
+      : 'ぜんぶ ◎ ！ もう1回 ◎ が つづくか ためしてみよう';
+    h += '<div class="target" style="margin-bottom:12px"><small>つぎの めあて</small><b>' + esc(m) + '</b></div>';
+  }
+  h += '<div class="card"><div class="label" style="margin-top:0">これまでの ようす（さいごの5回）</div><div style="overflow-x:auto"><table class="hist"><tr><th></th>' +
+    recent.map((r, i) => '<th>' + (a.recs.length - recent.length + i + 1) + '回</th>').join('') + '</tr>' +
+    W.pts.map(p => '<tr><td>' + p.name + '</td>' + recent.map(r => { const v = r.rate[p.key]; return '<td class="s' + v + '">' + LV[v].s + '</td>'; }).join('') + '</tr>').join('') +
+    '</table></div></div>';
+  if(a.last.memo) h += '<div class="card" style="margin-top:12px"><div class="label" style="margin-top:0">さいごの ひとこと</div>' + esc(a.last.memo) + '</div>';
+  h += '<div class="row" style="margin:16px 0 24px">';
+  if(target) h += '<button class="btn main big" id="anGo">このめあてで カメラへ</button>';
+  else if(special === 'next') h += '<button class="btn main big" id="anNext">' + esc(WAZA[W.next].name) + ' へ すすむ</button>';
+  else h += '<button class="btn main big" id="anGo">カメラへ</button>';
+  h += '</div>';
+  $('anBody').innerHTML = h;
+  const go = $('anGo'); if(go) go.onclick = () => { if(target){ mem.meate[mk()] = target.meate; save(); } openCam(); };
+  const nx = $('anNext'); if(nx) nx.onclick = () => { cur.waza = W.next; buildHome(); refreshHome(); openCam(); };
+  show('sAnalysis');
+}
+$('anHome').onclick = () => { refreshHome(); show('sHome'); };
+
+/* ====== 先生用 ====== */
+function tsvOf(){
+  const rows = [['日時','出席番号','技','観点1','観点2','観点3','観点4','コツ','ひとこと']];
+  mem.records.slice().sort((a, b) => a.ts - b.ts).forEach(r => {
+    const W = WAZA[r.waza], d = new Date(r.ts);
+    const t = (d.getMonth() + 1) + '/' + d.getDate() + ' ' + d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0');
+    const ks = [];
+    W.pts.forEach(p => (r.kotsu[p.key] || []).forEach(i => ks.push(p.name + '：' + p.kotsu[i])));
+    rows.push([t, r.n, W.plain].concat(W.pts.map(p => p.name + LV[r.rate[p.key]].s)).concat([ks.join(' / '), r.memo.replace(/[\t\r\n]+/g, ' ')]));
+  });
+  return rows.map(r => r.join('\t')).join('\n');
+}
+function renderTeacher(){
+  const recs = mem.records.slice().sort((a, b) => b.ts - a.ts);
+  $('tSummary').textContent = 'この iPad の記録：' + recs.length + ' 回';
+  $('tTsv').value = tsvOf();
+  const rows = recs.slice(0, 40).map(r => {
+    const W = WAZA[r.waza], d = new Date(r.ts);
+    return '<tr><td>' + (d.getMonth() + 1) + '/' + d.getDate() + ' ' + d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0') + '</td><td>' + r.n + '</td><td>' + W.plain + '</td><td>' +
+      W.pts.map(p => LV[r.rate[p.key]].s).join(' ') + '</td><td>' + esc(r.memo) + '</td></tr>';
+  }).join('');
+  $('tTable').innerHTML = '<tr><th>日時</th><th>№</th><th>技</th><th>観点（4つ）</th><th>ひとこと</th></tr>' + rows;
+}
+$('tOpen').onclick = () => {
+  if($('tPass').value === PASS){ $('tLock').style.display = 'none'; $('tBody').style.display = ''; renderTeacher(); }
+  else $('tErr').textContent = '合言葉が ちがいます。';
+};
+$('tCopy').onclick = async () => {
+  const text = $('tTsv').value;
+  try{ await navigator.clipboard.writeText(text); toast('コピーしました'); }
+  catch(e){ $('tTsv').removeAttribute('readonly'); $('tTsv').select(); try{ document.execCommand('copy'); toast('コピーしました'); }catch(_){ toast('下の枠を長おしして コピーしてください'); } $('tTsv').setAttribute('readonly', ''); }
+};
+let clearArm = 0;
+$('tClear').onclick = () => {
+  if(Date.now() - clearArm > 4000){ clearArm = Date.now(); toast('もう一度おすと 記録がすべて消えます'); return; }
+  mem.records = []; mem.meate = {}; save(); renderTeacher(); toast('消しました');
+};
+$('tHome').onclick = () => { refreshHome(); show('sHome'); };
+
+/* ====== 起動 ====== */
+buildHome(); refreshHome();
+if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
+  window.addEventListener('load', () => { try{ navigator.serviceWorker.register('sw.js').catch(()=>{}); }catch(e){} });
+}
+</script>
+</body>
+</html>
