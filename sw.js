@@ -1,5 +1,5 @@
 // さらっと跳び箱：オフラインでも開けるようにするしくみ
-const CACHE = 'saratto-tobibako-v1';
+const CACHE = 'saratto-tobibako-v2';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
